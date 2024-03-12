@@ -1,0 +1,19 @@
+[package]
+name = "etl0"
+version = "0.0.0"
+edition = "2021"
+authors = ["Adrian Macal <adma@amacal.pl>"]
+description = "A data pipeline tool."
+repository = "https://github.com/amacal/etl0"
+
+[dependencies]
+chrono = { version = "0.4.35", default-features = false, features = ["now"] }
+http-body-util = { version = "0.1.0", default-features = false, features = [] }
+hyper = { version = "1.2.0", default-features = false, features = ["client", "http1"] }
+hyper-util = { version = "0.1.3", default-features = false, features = ["tokio"] }
+regex = { version = "1.10.3", default-features = false, features = ["unicode-perl"] }
+serde = { version = "1.0.197", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.114", default-features = false, features = ["std"] }
+thiserror = { version = "1.0.57", default-features = false, features = [] }
+tokio = { version = "1.36.0", default-features = false, features = ["rt-multi-thread", "macros", "fs", "net", "io-util"] }
+tokio-stream = { version = "0.1.14", default-features = false, features = [] }

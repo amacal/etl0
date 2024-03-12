@@ -1,0 +1,26 @@
+{
+    "name": "Rust",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "containerEnv": {
+        "CARGO_TARGET_DIR": "/tmp/cargo",
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "swellaby.vscode-rust-test-adapter",
+                "ms-vscode.test-adapter-converter"
+            ],
+            "settings": {
+                "files.trimTrailingWhitespace": true,
+                "files.trimFinalNewlines": true,
+                "files.insertFinalNewline": true
+            }
+        }
+    }
+}

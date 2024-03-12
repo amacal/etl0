@@ -7,6 +7,8 @@ use std::env::current_dir;
 use tokio;
 use tokio_stream::StreamExt;
 
+use crate::docker::{ContainerCreateSpec, ContainerList};
+
 use self::docker::{ContainerCreate, ContainerCreateResponse, ContainerLogs, DockerClient, ImageCreate};
 use self::pipeline::find_pipelines;
 
@@ -20,7 +22,7 @@ async fn main() {
     }
 
     let socket = "/var/run/docker.sock";
-    let engine: DockerClient = DockerClient::open(socket).await;
+    let engine: DockerClient = DockerClient::open(socket);
 
     match engine.images_create().await {
         Err(error) => return println!("{:?}", error),
@@ -34,13 +36,28 @@ async fn main() {
         },
     }
 
-    let container: ContainerCreateResponse = match engine.containers_create().await {
+    let spec = ContainerCreateSpec {
+        image: "python:3.12",
+        command: vec!["pip", "install", "pandas"],
+    };
+
+    let container: ContainerCreateResponse = match engine.containers_create(spec).await {
         Err(error) => return println!("{:?}", error),
         Ok(ContainerCreate::Succeeded(response)) => response,
         Ok(value) => return println!("{:?}", value),
     };
 
-    println!("{:?}", engine.containers_list().await);
+    match engine.containers_list().await {
+        Err(error) => println!("{}", error),
+        Ok(ContainerList::BadParameter(value)) => println!("{:?}", value),
+        Ok(ContainerList::ServerError(value)) => println!("{:?}", value),
+        Ok(ContainerList::Succeeded(containers)) => {
+            for container in containers {
+                println!("{} | {:>32} | {}", &container.id[0..8], container.status, container.image)
+            }
+        }
+    }
+
     println!("{:?}", engine.containers_start(&container.id).await);
     println!("{:?}", engine.containers_wait(&container.id).await);
 

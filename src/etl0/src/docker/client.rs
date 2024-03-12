@@ -11,7 +11,7 @@ pub struct DockerClient {
 }
 
 impl DockerClient {
-    pub async fn open(socket: &str) -> Self {
+    pub fn open(socket: &str) -> Self {
         Self {
             socket: socket.to_owned(),
         }
@@ -20,7 +20,7 @@ impl DockerClient {
     pub async fn containers_list(&self) -> DockerResult<ContainerList> {
         let connection: DockerConnection = DockerConnection::open(&self.socket).await?;
 
-        match connection.get("/v1.42/containers/json").await {
+        match connection.get("/v1.42/containers/json?all=true").await {
             Ok(response) => match response.into_json().await {
                 Ok(value) => Ok(ContainerList::Succeeded(value)),
                 Err(error) => Err(error),
@@ -36,9 +36,9 @@ impl DockerClient {
         }
     }
 
-    pub async fn containers_create(&self) -> DockerResult<ContainerCreate> {
+    pub async fn containers_create(&self, spec: ContainerCreateSpec<'_>) -> DockerResult<ContainerCreate> {
         let url: String = format!("/v1.42/containers/create");
-        let payload: Value = json!({"Image": "python:3.12", "Cmd": ["pip", "install", "pandas"]});
+        let payload: Value = json!({"Image": spec.image, "Cmd": spec.command});
         let connection: DockerConnection = DockerConnection::open(&self.socket).await?;
 
         match connection.post(&url, Some(payload)).await {

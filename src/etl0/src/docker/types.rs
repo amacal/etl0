@@ -49,6 +49,12 @@ pub enum ContainerCreate {
     ServerError(ErrorResponse),
 }
 
+#[derive(Debug)]
+pub struct ContainerCreateSpec<'a> {
+    pub image: &'a str,
+    pub command: Vec<&'a str>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ContainerWaitResponseExitError {
     #[serde(rename = "Message")]

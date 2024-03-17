@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use hyper::body::{Bytes, Incoming};
+use hyper::body::{Body, Bytes, Incoming};
 use hyper::client::conn::http1::{handshake, SendRequest};
 use hyper::{Request, Response, StatusCode};
 
@@ -29,6 +29,10 @@ impl DockerResponse {
             inner: response,
             connection: connection,
         }
+    }
+
+    pub fn status(&self) -> StatusCode {
+        self.inner.status()
     }
 
     pub async fn into_bytes(self) -> DockerResult<Bytes> {
@@ -64,19 +68,27 @@ impl DockerResponse {
     }
 }
 
-pub struct DockerConnection {
-    sender: SendRequest<Full<Bytes>>,
+pub struct DockerConnection<T>
+where
+    T: Body,
+{
+    sender: SendRequest<T>,
     connection: JoinHandle<Result<(), hyper::Error>>,
 }
 
-impl DockerConnection {
+impl<T> DockerConnection<T>
+where
+    T: Body + Send + 'static,
+    T::Data: Send,
+    T::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
     pub async fn open(socket: &str) -> DockerResult<Self> {
         let stream: TokioIo<UnixStream> = match UnixStream::connect(Path::new(socket)).await {
             Err(error) => return DockerError::raise_unix_socket_connect(socket, error),
             Ok(stream) => TokioIo::new(stream),
         };
 
-        let docker: DockerConnection = match handshake(stream).await {
+        let docker: DockerConnection<T> = match handshake(stream).await {
             Err(error) => return DockerError::raise_handshake_failed(socket, error),
             Ok((sender, connection)) => Self {
                 sender: sender,
@@ -87,7 +99,7 @@ impl DockerConnection {
         Ok(docker)
     }
 
-    async fn execute(mut self, url: &str, request: Request<Full<Bytes>>) -> DockerResult<DockerResponse> {
+    async fn execute(mut self, url: &str, request: Request<T>) -> DockerResult<DockerResponse> {
         let response: Response<Incoming> = match self.sender.send_request(request).await {
             Err(error) => return DockerError::raise_request_failed(url, error),
             Ok(value) => value,
@@ -103,6 +115,24 @@ impl DockerConnection {
         Ok(response)
     }
 
+    pub async fn put(self, url: &str, data: T) -> DockerResult<DockerResponse> {
+        let request = Request::builder()
+            .uri(url)
+            .method("PUT")
+            .header("Host", "localhost")
+            .header("Content-Type", "application/x-tar")
+            .body(data);
+
+        let request: Request<T> = match request {
+            Err(error) => return DockerError::raise_builder_failed(url, error),
+            Ok(value) => value,
+        };
+
+        self.execute(url, request).await
+    }
+}
+
+impl DockerConnection<Full<Bytes>> {
     pub async fn get(self, url: &str) -> DockerResult<DockerResponse> {
         let request = Request::builder()
             .uri(url)

@@ -3,6 +3,7 @@ use hyper::StatusCode;
 use thiserror::Error;
 
 use super::http::DockerResponse;
+use crate::tar::TarError;
 
 #[derive(Debug, Error)]
 pub enum DockerError {
@@ -41,6 +42,9 @@ pub enum DockerError {
 
     #[error("Cannot parse utf8 text, because '{0}'")]
     Utf8ParsingFailed(std::str::Utf8Error),
+
+    #[error("Cannot process tar archive, because '{0}'")]
+    OutgoingArchiveFailed(TarError),
 }
 
 pub type DockerResult<T> = Result<T, DockerError>;
@@ -96,5 +100,9 @@ impl DockerError {
 
     pub(crate) fn raise_utf8_parsing_failed<T>(error: std::str::Utf8Error) -> DockerResult<T> {
         Err(Self::Utf8ParsingFailed(error))
+    }
+
+    pub(crate) fn raise_outgoing_archive_failed<T>(error: TarError) -> DockerResult<T> {
+        Err(Self::OutgoingArchiveFailed(error))
     }
 }

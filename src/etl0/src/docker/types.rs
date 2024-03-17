@@ -93,6 +93,23 @@ pub enum ContainerLogs {
     ServerError(ErrorResponse),
 }
 
+#[derive(Debug)]
+pub enum ContainerAttach {
+    Succeeded(ContainerLogsStream),
+    BadParameter(ErrorResponse),
+    NoSuchContainer(ErrorResponse),
+    ServerError(ErrorResponse),
+}
+
+#[derive(Debug)]
+pub enum ContainerUpload {
+    Succeeded,
+    BadParameter(ErrorResponse),
+    PermissionDenied(ErrorResponse),
+    NoSuchContainer(ErrorResponse),
+    ServerError(ErrorResponse),
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ErrorResponse {
     pub message: String,

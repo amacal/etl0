@@ -18,7 +18,11 @@ pub struct DockerStreamBuffer {
 }
 
 impl DockerStreamBuffer {
-    fn append(&mut self, data: &[u8]) {
+    pub fn len(&self) -> usize {
+        self.position
+    }
+
+    pub fn append(&mut self, data: &[u8]) {
         let expected = self.position + data.len();
 
         if self.data.len() < expected {

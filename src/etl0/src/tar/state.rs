@@ -212,11 +212,8 @@ impl TarStatePadding {
 impl TarStateHandler for TarStatePadding {
     fn poll(self, _cx: &mut Context<'_>) -> TarPollResult {
         match self.index {
-            index if index <= 1 => TarPollResult::ReturnPolling(
-                TarState::Padding(self.next()),
-                Poll::Ready(Some(Ok(TarChunk::padding(index)))),
-            ),
-            _ => TarPollResult::ReturnPolling(TarState::completed(), Poll::Ready(None)),
+            0 => TarState::Padding(self.next()).ready(TarChunk::padding(0)),
+            index => TarState::completed().ready(TarChunk::padding(index)),
         }
     }
 }
@@ -231,7 +228,7 @@ impl TarStateCompleted {
 
 impl TarStateHandler for TarStateCompleted {
     fn poll(self, _cx: &mut Context<'_>) -> TarPollResult {
-        TarPollResult::ReturnPolling(TarState::Completed(self), Poll::Ready(None))
+        TarPollResult::ReturnPolling(TarState::completed(), Poll::Ready(None))
     }
 }
 
